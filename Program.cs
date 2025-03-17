@@ -240,7 +240,7 @@ namespace IndxConsoleApp
                                         continue;
                                     case ConsoleKey.M:
                                         measurePerformance = !measurePerformance;
-                                        break;
+                                        continue;
                                     case ConsoleKey.S:
                                         if (sortField != null)
                                             sortList = !sortList;
