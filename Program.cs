@@ -28,7 +28,7 @@ namespace IndxConsoleApp
             // Prompt for dataset selection
             var fileName = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
-                    .Title("Choose a [green]dataset[/]?")
+                    .Title("Choose a [blue]dataset[/]?")
                     .HighlightStyle(new Style(Color.Black, Color.White))
                     .PageSize(10)
                     .MoreChoicesText("[grey](Move up and down to reveal more choices)[/]")
@@ -130,9 +130,14 @@ namespace IndxConsoleApp
             DateTime indexStart = DateTime.Now;
             double indexTime = 0;
             AnsiConsole.Progress()
+                .Columns(
+                    new TaskDescriptionColumn(),
+                    new ProgressBarColumn().CompletedStyle(Color.Grey85).RemainingStyle(Color.Grey15),
+                    new PercentageColumn()
+                )
                 .Start(ctx =>
                 {
-                    var task = ctx.AddTask("[green]Indexing...[/]", autoStart: false);
+                    var task = ctx.AddTask("Indexing", autoStart: false);
                     task.StartTask();
                     while (SearchEngine.Status.SystemState != SystemState.Ready)
                     {
@@ -140,7 +145,9 @@ namespace IndxConsoleApp
                         Thread.Sleep(50);
                     }
                     task.Value = 100;
+                    task.Description = "[bold green]Complete[/]";
                 });
+
             indexTime = (DateTime.Now - indexStart).TotalMilliseconds;
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"🟢 Indexed '{file}' ({SearchEngine.Status.DocumentCount} documents) and ready to search in {(indexTime / 1000.0):F1} seconds\n");
