@@ -28,7 +28,7 @@ namespace IndxConsoleApp
             // Prompt for dataset selection
             var fileName = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
-                    .Title("Choose a [blue]dataset[/]?")
+                    .Title("Choose a dataset?")
                     .HighlightStyle(new Style(Color.Black, Color.White))
                     .PageSize(10)
                     .MoreChoicesText("[grey](Move up and down to reveal more choices)[/]")
@@ -46,10 +46,16 @@ namespace IndxConsoleApp
             Console.InputEncoding = Encoding.UTF8;
 
             // Stream data from file and initialize SearchEngine
-            AnsiConsole.Markup($"\rProcessing {file}");
             using (FileStream fstream = File.Open(file, FileMode.Open, FileAccess.Read))
             {
-                SearchEngine.Init(fstream, out string _errorMessage);
+                AnsiConsole.Status()
+                    .SpinnerStyle(Color.LightSlateBlue)
+                    .Spinner(Spinner.Known.Line) // choose a spinner style
+                    .Start($"Analyzing JSON", ctx =>
+                    {
+                        // Perform your loading operation.
+                        SearchEngine.Init(fstream, out string _errorMessage);
+                    });
             }
             if (SearchEngine.DocumentFields == null)
                 return;
@@ -60,6 +66,7 @@ namespace IndxConsoleApp
             // 
 
             Field sortField = null!;
+
             if (fileName == "pokedex")
             {
                 SearchEngine.GetField("pokedex_number")!.Indexable = true;
@@ -77,23 +84,24 @@ namespace IndxConsoleApp
                 SearchEngine.GetField("type2")!.Weight = Weight.Low;
                 SearchEngine.GetField("type2")!.Facetable = true;
 
+                SearchEngine.GetField("classfication")!.Indexable = true;
+                SearchEngine.GetField("classfication")!.Weight = Weight.Low;
+                SearchEngine.GetField("classfication")!.Facetable = true;
+
                 SearchEngine.GetField("is_legendary")!.Facetable = true;
                 SearchEngine.GetField("is_legendary")!.Filterable = true;
 
-                SearchEngine.GetField("weight_kg")!.Facetable = true;
-
-                SearchEngine.GetField("attack")!.Facetable = true;
                 SearchEngine.GetField("attack")!.Sortable = true;
-
-                SearchEngine.GetField("hp")!.Facetable = true;
 
                 SearchEngine.GetField("abilities")!.Facetable = true;
 
                 sortField = SearchEngine.GetField("attack")!;
             }
+
             else if (fileName == "millum")
             {
                 SearchEngine.GetField("Navn")!.Indexable = true;
+                SearchEngine.GetField("KatalogID")!.Facetable = true;
             }
 
             // 
@@ -104,12 +112,15 @@ namespace IndxConsoleApp
             {
                 DateTime loadStart = DateTime.Now;
                 AnsiConsole.Status()
+                    .SpinnerStyle(Color.LightSlateBlue)
+                    .Spinner(Spinner.Known.BouncingBar) // choose a spinner style
                     .Start($"Loading {file}", ctx =>
                     {
+                        // Perform your loading operation.
                         SearchEngine.LoadJson(fstream, out _);
                     });
                 double loadTime = (DateTime.Now - loadStart).TotalMilliseconds;
-                Console.WriteLine($"\rLoading {file} completed in {((int)loadTime / 1000.0):F1} seconds\n");
+                AnsiConsole.Markup($"\nLoading {file} completed in {((int)loadTime / 1000.0):F1} seconds\n");
             }
 
             // 
@@ -132,8 +143,12 @@ namespace IndxConsoleApp
             AnsiConsole.Progress()
                 .Columns(
                     new TaskDescriptionColumn(),
-                    new ProgressBarColumn().CompletedStyle(Color.Grey85).RemainingStyle(Color.Grey15),
+                    new ProgressBarColumn()
+                        .CompletedStyle(Color.LightSlateBlue)
+                        .RemainingStyle(Color.Grey15)
+                        .FinishedStyle(Color.LightSlateBlue),
                     new PercentageColumn()
+                        .CompletedStyle(Color.Default)
                 )
                 .Start(ctx =>
                 {
@@ -145,7 +160,7 @@ namespace IndxConsoleApp
                         Thread.Sleep(50);
                     }
                     task.Value = 100;
-                    task.Description = "[bold green]Complete[/]";
+                    task.Description = "[bold]Complete[/]";
                 });
 
             indexTime = (DateTime.Now - indexStart).TotalMilliseconds;
@@ -156,6 +171,7 @@ namespace IndxConsoleApp
             // 
             // SET UP FILTERS & BOOST
             // 
+
             Filter combinedFilters = null!;
             int docsBoosted = 0;
 
@@ -199,6 +215,8 @@ namespace IndxConsoleApp
             double latency = 0.0;
             long memoryUsed = 0;
             bool continuousMeasure = true;
+            if(fileName == "millum") continuousMeasure = false;
+            int currentFacetPage = 0;
             DateTime lastInputTime = DateTime.Now;
 
             AnsiConsole.Live(new Rows([]))
@@ -260,6 +278,12 @@ namespace IndxConsoleApp
                                         if (sortField != null)
                                             sortList = !sortList;
                                         continue;
+                                    case ConsoleKey.LeftArrow:
+                                        currentFacetPage = Math.Max(0, currentFacetPage - 1);
+                                        continue;
+                                    case ConsoleKey.RightArrow:
+                                        currentFacetPage++;
+                                        continue;
                                     default:
                                         // For non-toggle keys, process as normal input.
                                         if (keyInfo.Key == ConsoleKey.Backspace && text.Length > 0)
@@ -287,7 +311,7 @@ namespace IndxConsoleApp
                             query.EnableBoost = enableBoost;
 
                         // Build search results table
-                        var table = new Table().Border(TableBorder.Horizontal);
+                        var table = new Table().Border(TableBorder.Simple);
                         table.BorderStyle = new Style(Color.Grey15);
 
                         if(fileName == "pokedex")
@@ -296,7 +320,8 @@ namespace IndxConsoleApp
                             table.AddColumn("Name");
                             table.AddColumn("Pokedex #");
                             table.AddColumn("Types");
-                            table.AddColumn("Stats (Attack, Health, Weight)");
+                            table.AddColumn("Classification");
+                            table.AddColumn("Stats [Grey30](Attack, Health, Speed)[/]");
                             table.AddColumn("Score");
                         }
 
@@ -319,7 +344,8 @@ namespace IndxConsoleApp
                                     var name = JsonHelper.GetFieldValue(json, "name");
                                     var type1 = JsonHelper.GetFieldValue(json, "type1");
                                     var type2 = JsonHelper.GetFieldValue(json, "type2");
-                                    var weight = JsonHelper.GetFieldValue(json, "weight_kg");
+                                    var classification = JsonHelper.GetFieldValue(json, "classfication");
+                                    var speed = JsonHelper.GetFieldValue(json, "speed");
                                     var attack = JsonHelper.GetFieldValue(json, "attack");
                                     var health = JsonHelper.GetFieldValue(json, "hp");
                                     var legendary = JsonHelper.GetFieldValue(json, "is_legendary");
@@ -329,39 +355,36 @@ namespace IndxConsoleApp
                                     stats.BorderStyle = new Style(Color.Grey30);
                                     stats.HideHeaders();
                                     // stats.Expand();
-                                    stats.AddColumn("Attack").Width(40);
-                                    stats.AddColumn("Health").Width(40);
-                                    stats.AddColumn("Weight").Width(40);
-                                    stats.AddRow(attack, health, $"{weight} KG").Expand();
+                                    stats.AddColumn("Attack");
+                                    stats.AddColumn("Health");
+                                    stats.AddColumn("Speed");
+                                    stats.AddRow(attack, health, speed);
 
                                     table.AddRow(
                                         new Panel(new Markup($"{name} {legendarySymbol}"))
                                             .Border(BoxBorder.None)
-                                            .PadLeft(0)
-                                            .Padding(new Padding(1)),
+                                            .Padding(new Padding(1))
+                                            .PadLeft(0),
                                         new Panel(new Markup(pokenum))
                                             .Border(BoxBorder.None)
-                                            .PadLeft(0)
-                                            .Padding(new Padding(1)),
+                                            .Padding(new Padding(1))
+                                            .PadLeft(0),
                                         new Panel(new Markup($"{type1} {type2}"))
                                             .Border(BoxBorder.None)
-                                            .PadLeft(0)
-                                            .Padding(new Padding(1)),
-                                        // new Panel(new Markup($"A: [bold]{attack}[/] / HP: {health} / W: {weight}"))
-                                        //     .Padding(new Padding(0))
-                                        //     .PadLeft(1)
-                                        //     .PadRight(1)
-                                        //     .BorderColor(Color.DarkCyan)
-                                        //     .Expand(),
+                                            .Padding(new Padding(1))
+                                            .PadLeft(0),
+                                         new Panel(new Markup(classification))
+                                            .Border(BoxBorder.None)
+                                            .Padding(new Padding(1))
+                                            .PadLeft(0),
                                         new Panel(stats)
                                             .Padding(new Padding(0))
-                                            .PadLeft(0)
-                                            // .Expand()
+                                            .Expand()
                                             .Border(BoxBorder.None),
                                         new Panel(new Markup($"{score}"))
                                             .Border(BoxBorder.None)
-                                            .PadLeft(0)
                                             .Padding(new Padding(1))
+                                            .PadLeft(0)
                                     );
 
                                 }
@@ -388,21 +411,43 @@ namespace IndxConsoleApp
                             Markup facetsMarkup = new Markup("");
                             if (printFacets && facets != null)
                             {
-                                var sb = new StringBuilder();
+                                // Build a compact string for each facet group.
+                                var facetGroups = new List<string>();
                                 foreach (var field in SearchEngine.DocumentFields.GetFacetableFieldList())
                                 {
                                     var fName = field.Name;
-                                    // Escape field name so that any accidental markup is ignored.
-                                    sb.AppendLine($"[bold]{Markup.Escape(fName)}[/]");
+                                    var sb = new StringBuilder();
+                                    sb.Append($"[bold]{Markup.Escape(fName)}[/]: ");
                                     if (facets.TryGetValue(fName, out var histogram) && histogram != null)
                                     {
-                                        foreach (var item in histogram)
-                                            sb.AppendLine($"{Markup.Escape(item.Key)} ({item.Value})");
-                                        sb.AppendLine("");
+                                        // Join key/value pairs with commas.
+                                        var items = histogram.Select(item => $"{Markup.Escape(item.Key)} ({item.Value})");
+                                        sb.Append(string.Join(", ", items));
                                     }
+                                    facetGroups.Add(sb.ToString());
                                 }
-                                facetsMarkup = new Markup(sb.ToString());
+
+                                // Pagination: Show groupsPerPage facet groups per page.
+                                int groupsPerPage = 2;
+                                int totalPages = (int)Math.Ceiling((double)facetGroups.Count / groupsPerPage);
+                                if (totalPages == 0)
+                                    totalPages = 1;
+                                // Ensure currentFacetPage is within bounds (this variable is updated when left/right arrow keys are pressed)
+                                if (currentFacetPage >= totalPages)
+                                    currentFacetPage = totalPages - 1;
+                                if (currentFacetPage < 0)
+                                    currentFacetPage = 0;
+
+                                int start = currentFacetPage * groupsPerPage;
+                                int count = Math.Min(groupsPerPage, facetGroups.Count - start);
+                                var pageFacets = facetGroups.Skip(start).Take(count);
+                                string facetText = string.Join("\n\n", pageFacets) +
+                                                $"\n\n[grey]Page {currentFacetPage + 1} of {totalPages} (←/→ to navigate)[/]";
+
+                                facetsMarkup = new Markup(facetText);
                             }
+    
+
                             if (!allowEmptySearch)
                                 query.EnableFacets = false;
 
@@ -431,25 +476,32 @@ namespace IndxConsoleApp
 
                             // Prompt text: note the square brackets for keys are escaped.
                             var promptText = new Markup(
-                                "[darkblue]Press [[ESC]] to quit, [[C]] to clear, or type to continue searching.[/]\n" +
-                                "[cyan][[T]] Truncation " + (truncateList ? "(On)" : "(Off)") + "[/], " +
-                                "[cyan][[F]] Filters " + (enableFilters ? "(On)" : "(Off)") + "[/], " +
-                                "[cyan][[P]] Print facets " + (printFacets ? "(On)" : "(Off)") + "[/], " +
-                                "[cyan][[B]] Boost " + (enableBoost ? "(On)" : "(Off)") + "[/]\n" +
-                                "[cyan][[E]] Empty search " + (allowEmptySearch ? "(On)" : "(Off)") + "[/], " +
-                                "[cyan][[M]] Measure performance " + (measurePerformance ? "([green]On[/])" : "(Off)") + "[/], " +
-                                "[cyan][[S]] Sorting " + (sortList ? "(On)" : "(Off)") + "[/]"
+                                "[cyan]Press [[UP/DOWN]] to change num, [[ESC]] to quit, [[C]] to clear, or type to continue searching.[/]\n"
                             );
+                            var commands = new Table();
+                            commands.Border(TableBorder.Rounded);
+                            commands.BorderColor(Color.Cyan1);
+                            commands.AddColumn("Key");
+                            commands.AddColumn("Command");
+                            commands.AddColumn("Status");
+                            commands.AddRow("[[T]]", "[grey]Truncation[/]", (truncateList ? "[cyan]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[F]]", "[grey]Filters[/]", (enableFilters ? "[cyan]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[P]]", "[grey]Print facets[/]", (printFacets  ? "[cyan]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[B]]", "[grey]Boosting[/]", (enableBoost ? "[cyan]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[E]]", "[grey]Empty search[/]", (allowEmptySearch ? "[cyan]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[M]]", "[grey]Measure performance[/]", (measurePerformance ? "[cyan]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[S]]", "[grey]Sorting[/]", (sortList ? "[cyan]Enabled[/]" : "Disabled"));
+
+
                             renderables.Add(facetsMarkup);
                             renderables.Add(additionalInfo);
                             if(measurePerformance) renderables.Add(performanceMeta);
                             renderables.Add(promptText);
+                            renderables.Add(commands);
                         }
 
                         // Combine renderables in a vertical stack.
                         var renderStack = new Rows(renderables);
-
-                        // Update the live display (without an outer border).
                         ctx.UpdateTarget(renderStack);
 
                         Thread.Sleep(50);
@@ -457,7 +509,7 @@ namespace IndxConsoleApp
                 });
         } // end Main
 
-        /// Prints detected JSON fields.
+        /// Prints detected JSON fields
         public static void PrintFields(bool printToDebugWindow, DocumentFields documentFields)
         {
             var fields = documentFields.GetFieldList();
@@ -473,9 +525,11 @@ namespace IndxConsoleApp
                 return;
             }
             
-            var table = new Spectre.Console.Table();
-            table.Border = TableBorder.Rounded;
-            table.Title = new TableTitle("\n[bold blue]Detected JSON Fields[/]");
+            var table = new Table();
+            table.BorderColor(Color.Grey50);
+            table.Expand();
+            table.Border = TableBorder.Markdown;
+            table.Title = new TableTitle("\n[LightSlateBlue]Detected JSON Fields[/]\n");
             
             // Add columns.
             table.AddColumn(new TableColumn("[bold]Field Name[/]").LeftAligned());
@@ -496,7 +550,7 @@ namespace IndxConsoleApp
             
             // Render the table.
             AnsiConsole.Write(table);
-        }
+        } // end function PrintFields
 
     } // end class Program
 } // end namespace
