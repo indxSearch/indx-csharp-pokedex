@@ -317,12 +317,15 @@ namespace IndxConsoleApp
                                     table.AddRow(
                                         new Panel(new Markup($"{name} {legendarySymbol}"))
                                             .Border(BoxBorder.None)
+                                            .PadLeft(0)
                                             .Padding(new Padding(1)),
                                         new Panel(new Markup(pokenum))
                                             .Border(BoxBorder.None)
+                                            .PadLeft(0)
                                             .Padding(new Padding(1)),
                                         new Panel(new Markup($"{type1}, {type2}"))
                                             .Border(BoxBorder.None)
+                                            .PadLeft(0)
                                             .Padding(new Padding(1)),
                                         new Panel(new Markup($"A: {attack} / HP: {health} / W: {weight}"))
                                             .Padding(new Padding(0))
@@ -331,6 +334,7 @@ namespace IndxConsoleApp
                                             .Expand(),
                                         new Panel(new Markup($"{score}"))
                                             .Border(BoxBorder.None)
+                                            .PadLeft(0)
                                             .Padding(new Padding(1))
                                     );
 
