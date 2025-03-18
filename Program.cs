@@ -32,10 +32,9 @@ namespace IndxConsoleApp
                     .HighlightStyle(new Style(Color.Black, Color.White))
                     .PageSize(10)
                     .MoreChoicesText("[grey](Move up and down to reveal more choices)[/]")
-                    .AddChoices(new[] {
-                        "pokedex", "boligmappa", "imdb_top10k",
-                        "millum",
-                    }));
+                    .AddChoices(
+                        "pokedex", "boligmappa", "millum"
+                    ));
 
             // Locate file (adjust relative path if needed)
             string file = "data/" + fileName + ".json";
@@ -188,7 +187,11 @@ namespace IndxConsoleApp
             bool truncateList = true;
             bool sortList = false;
             bool measurePerformance = false;
+            bool performanceMeasured = false;
             int truncationIndex = 0;
+            double latency = 0.0;
+            long memoryUsed = 0;
+            bool continuousMeasure = true;
             DateTime lastInputTime = DateTime.Now;
 
             AnsiConsole.Live(new Rows([]))
@@ -343,12 +346,12 @@ namespace IndxConsoleApp
                         }
 
                         // Prepare header markup; escape dynamic text to avoid markup parsing errors.
-                        var headerMarkup = new Markup("🔍 Search: " + Markup.Escape(text) + "\n");
+                        var inputField = new Markup("🔍 Search: " + Markup.Escape(text) + "\n");
 
-                        // Build list of renderables.
+                        // Render list
                         var renderables = new List<IRenderable>
                         {
-                            headerMarkup,
+                            inputField,
                             table
                         };
 
@@ -386,17 +389,22 @@ namespace IndxConsoleApp
                             if (measurePerformance)
                             {
                                 int numReps = 100;
-                                DateTime perfStart = DateTime.Now;
-                                Parallel.For(1, numReps, i => { SearchEngine.Search(query); });
-                                var timeMs = (DateTime.Now - perfStart).TotalMilliseconds / numReps;
+                                if(!performanceMeasured || continuousMeasure)
+                                {
+                                    DateTime perfStart = DateTime.Now;
+                                    Parallel.For(1, numReps, i => { SearchEngine.Search(query); });
+                                    latency = (DateTime.Now - perfStart).TotalMilliseconds / numReps;
+                                    memoryUsed = GC.GetTotalMemory(false) / 1024 / 1024;
+                                }
                                 performanceMeta = new Markup(
-                                    $"Response time {timeMs:F3} ms (avg of {numReps} reps) filters ({enableFilters}) facets ({query.EnableFacets})\n" +
-                                    $"Memory used: {GC.GetTotalMemory(false) / 1024 / 1024} MB\n" +
+                                    $"Response time {latency:F3} ms (avg of {numReps} reps) filters ({enableFilters}) facets ({query.EnableFacets})\n" +
+                                    $"Memory used: {memoryUsed} MB\n" +
                                     $"Document count: {SearchEngine.Status.DocumentCount}\n" +
                                     $"Docs boosted: {(enableBoost ? docsBoosted : 0)}\n" +
                                     $"Version: {SearchEngine.Status.Version}\n" +
-                                    $"Valid License: {SearchEngine.Status.ValidLicense} / Expires {SearchEngine.Status.LicenseExpirationDate}");
-                            }
+                                    $"Valid License: {SearchEngine.Status.ValidLicense} / Expires {SearchEngine.Status.LicenseExpirationDate.ToShortDateString()}");
+                                performanceMeasured = true;
+                            } else performanceMeasured = false;
 
                             // Prompt text: note the square brackets for keys are escaped.
                             var promptText = new Markup(
