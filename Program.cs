@@ -21,7 +21,7 @@ namespace IndxConsoleApp
 
             // Display header
             AnsiConsole.Write(
-                new FigletText("indx v4.0.0")
+                new FigletText("indx v4.0")
                     .Centered()
                     .Color(Color.White));
 
@@ -288,6 +288,7 @@ namespace IndxConsoleApp
 
                         // Build search results table
                         var table = new Table().Border(TableBorder.Horizontal);
+                        table.BorderStyle = new Style(Color.Grey15);
 
                         if(fileName == "pokedex")
                         {
@@ -295,7 +296,7 @@ namespace IndxConsoleApp
                             table.AddColumn("Name");
                             table.AddColumn("Pokedex #");
                             table.AddColumn("Types");
-                            table.AddColumn("Stats");
+                            table.AddColumn("Stats (Attack, Health, Weight)");
                             table.AddColumn("Score");
                         }
 
@@ -324,6 +325,15 @@ namespace IndxConsoleApp
                                     var legendary = JsonHelper.GetFieldValue(json, "is_legendary");
                                     var legendarySymbol = legendary == "True" ? "🌟" : "";
 
+                                    var stats = new Table();
+                                    stats.BorderStyle = new Style(Color.Grey30);
+                                    stats.HideHeaders();
+                                    // stats.Expand();
+                                    stats.AddColumn("Attack").Width(40);
+                                    stats.AddColumn("Health").Width(40);
+                                    stats.AddColumn("Weight").Width(40);
+                                    stats.AddRow(attack, health, $"{weight} KG").Expand();
+
                                     table.AddRow(
                                         new Panel(new Markup($"{name} {legendarySymbol}"))
                                             .Border(BoxBorder.None)
@@ -333,15 +343,21 @@ namespace IndxConsoleApp
                                             .Border(BoxBorder.None)
                                             .PadLeft(0)
                                             .Padding(new Padding(1)),
-                                        new Panel(new Markup($"{type1}, {type2}"))
+                                        new Panel(new Markup($"{type1} {type2}"))
                                             .Border(BoxBorder.None)
                                             .PadLeft(0)
                                             .Padding(new Padding(1)),
-                                        new Panel(new Markup($"A: {attack} / HP: {health} / W: {weight}"))
+                                        // new Panel(new Markup($"A: [bold]{attack}[/] / HP: {health} / W: {weight}"))
+                                        //     .Padding(new Padding(0))
+                                        //     .PadLeft(1)
+                                        //     .PadRight(1)
+                                        //     .BorderColor(Color.DarkCyan)
+                                        //     .Expand(),
+                                        new Panel(stats)
                                             .Padding(new Padding(0))
-                                            .PadLeft(1)
-                                            .PadRight(1)
-                                            .Expand(),
+                                            .PadLeft(0)
+                                            // .Expand()
+                                            .Border(BoxBorder.None),
                                         new Panel(new Markup($"{score}"))
                                             .Border(BoxBorder.None)
                                             .PadLeft(0)
