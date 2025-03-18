@@ -150,16 +150,21 @@ namespace IndxConsoleApp
             // 
             // SET UP FILTERS & BOOST
             // 
-
             Filter combinedFilters = null!;
-            Filter origFilter = SearchEngine.CreateRangeFilter("pokedex_number", 1, 151)!;
-            combinedFilters = origFilter; // could combine additional filters here with & operator
+            int docsBoosted = 0;
 
-            Filter legendaryFilter = SearchEngine.CreateValueFilter("is_legendary", true)!;
-            var legendaryBoost = new Boost[1];
-            legendaryBoost[0] = new Boost(legendaryFilter, BoostStrength.Med);
-            int docsBoosted = SearchEngine.DefineBoost(legendaryBoost);
+            if (fileName == "pokedex")
+            {
+                // FILTER
+                Filter origFilter = SearchEngine.CreateRangeFilter("pokedex_number", 1, 151)!;
+                combinedFilters = origFilter; // could combine additional filters here with & operator
 
+                // BOOST
+                Filter legendaryFilter = SearchEngine.CreateValueFilter("is_legendary", true)!;
+                var legendaryBoost = new Boost[1];
+                legendaryBoost[0] = new Boost(legendaryFilter, BoostStrength.Med);
+                docsBoosted = SearchEngine.DefineBoost(legendaryBoost);
+            }
 
             // 
             // WAIT FOR USER TO START SEARCHING
@@ -272,17 +277,17 @@ namespace IndxConsoleApp
                             query.EnableBoost = enableBoost;
 
                         // Build search results table
-                        var table = new Table().Border(TableBorder.Minimal);
-                        table.Expand();
+                        var table = new Table().Border(TableBorder.Horizontal);
+
                         if(fileName == "pokedex")
                         {
+                            table.Expand();
                             table.AddColumn("Name");
                             table.AddColumn("Pokedex #");
                             table.AddColumn("Types");
                             table.AddColumn("Stats");
                             table.AddColumn("Score");
                         }
-                        // table.AddEmptyRow();
 
                         var jsonResult = SearchEngine.Search(query);
                         int minimumScore = 0;
@@ -308,14 +313,27 @@ namespace IndxConsoleApp
                                     var health = JsonHelper.GetFieldValue(json, "hp");
                                     var legendary = JsonHelper.GetFieldValue(json, "is_legendary");
                                     var legendarySymbol = legendary == "True" ? "🌟" : "";
+
                                     table.AddRow(
-                                        $"{name} {legendarySymbol}",
-                                        pokenum,
-                                        $"{type1}, {type2}",
-                                        $"A: {attack} / HP: {health} / W: {weight}",
-                                        $"{score}"
+                                        new Panel(new Markup($"{name} {legendarySymbol}"))
+                                            .Border(BoxBorder.None)
+                                            .Padding(new Padding(1)),
+                                        new Panel(new Markup(pokenum))
+                                            .Border(BoxBorder.None)
+                                            .Padding(new Padding(1)),
+                                        new Panel(new Markup($"{type1}, {type2}"))
+                                            .Border(BoxBorder.None)
+                                            .Padding(new Padding(1)),
+                                        new Panel(new Markup($"A: {attack} / HP: {health} / W: {weight}"))
+                                            .Padding(new Padding(0))
+                                            .PadLeft(1)
+                                            .PadRight(1)
+                                            .Expand(),
+                                        new Panel(new Markup($"{score}"))
+                                            .Border(BoxBorder.None)
+                                            .Padding(new Padding(1))
                                     );
-                                    // if(i < jsonResult.Records.Length - 1) table.AddEmptyRow();
+
                                 }
                             }
                         }
@@ -360,14 +378,15 @@ namespace IndxConsoleApp
 
                             // Additional info: hit count and, if enabled, performance measurements.
                             Markup additionalInfo = new Markup($"\nExact hits: {truncationIndex + 1}\n");
+                            Markup performanceMeta = new Markup("");
                             if (measurePerformance)
                             {
                                 int numReps = 100;
                                 DateTime perfStart = DateTime.Now;
                                 Parallel.For(1, numReps, i => { SearchEngine.Search(query); });
                                 var timeMs = (DateTime.Now - perfStart).TotalMilliseconds / numReps;
-                                additionalInfo = new Markup(additionalInfo.ToString() +
-                                    $"\nResponse time {timeMs:F3} ms (avg of {numReps} reps) filters ({enableFilters}) facets ({query.EnableFacets})\n" +
+                                performanceMeta = new Markup(
+                                    $"Response time {timeMs:F3} ms (avg of {numReps} reps) filters ({enableFilters}) facets ({query.EnableFacets})\n" +
                                     $"Memory used: {GC.GetTotalMemory(false) / 1024 / 1024} MB\n" +
                                     $"Document count: {SearchEngine.Status.DocumentCount}\n" +
                                     $"Docs boosted: {(enableBoost ? docsBoosted : 0)}\n" +
@@ -383,11 +402,12 @@ namespace IndxConsoleApp
                                 "[cyan][[P]] Print facets " + (printFacets ? "(On)" : "(Off)") + "[/], " +
                                 "[cyan][[B]] Boost " + (enableBoost ? "(On)" : "(Off)") + "[/]\n" +
                                 "[cyan][[E]] Empty search " + (allowEmptySearch ? "(On)" : "(Off)") + "[/], " +
-                                "[cyan][[M]] Measure performance " + (measurePerformance ? "(On)" : "(Off)") + "[/], " +
+                                "[cyan][[M]] Measure performance " + (measurePerformance ? "([green]On[/])" : "(Off)") + "[/], " +
                                 "[cyan][[S]] Sorting " + (sortList ? "(On)" : "(Off)") + "[/]"
                             );
                             renderables.Add(facetsMarkup);
                             renderables.Add(additionalInfo);
+                            if(measurePerformance) renderables.Add(performanceMeta);
                             renderables.Add(promptText);
                         }
 
@@ -402,9 +422,7 @@ namespace IndxConsoleApp
                 });
         } // end Main
 
-        /// <summary>
         /// Prints detected JSON fields.
-        /// </summary>
         public static void PrintFields(bool printToDebugWindow, DocumentFields documentFields)
         {
             var fields = documentFields.GetFieldList();
@@ -420,7 +438,6 @@ namespace IndxConsoleApp
                 return;
             }
             
-            // Create a Spectre.Console.Table.
             var table = new Spectre.Console.Table();
             table.Border = TableBorder.Rounded;
             table.Title = new TableTitle("\n[bold blue]Detected JSON Fields[/]");
@@ -445,7 +462,6 @@ namespace IndxConsoleApp
             // Render the table.
             AnsiConsole.Write(table);
         }
-
 
     } // end class Program
 } // end namespace
