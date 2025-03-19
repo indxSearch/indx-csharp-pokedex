@@ -76,6 +76,9 @@ namespace IndxConsoleApp
                 SearchEngine.GetField("name")!.Indexable = true;
                 SearchEngine.GetField("name")!.Weight = Weight.High;
 
+                SearchEngine.GetField("japanese_name")!.Indexable = true;
+                SearchEngine.GetField("japanese_name")!.Weight = Weight.Med;
+
                 SearchEngine.GetField("type1")!.Indexable = true;
                 SearchEngine.GetField("type1")!.Weight = Weight.Low;
                 SearchEngine.GetField("type1")!.Facetable = true;
@@ -252,7 +255,8 @@ namespace IndxConsoleApp
                                 {
                                     case ConsoleKey.C:
                                         text = "";
-                                        lastInputTime = DateTime.Now;
+                                        // lastInputTime = DateTime.Now;
+                                        currentFacetPage = 0;
                                         continue;
                                     case ConsoleKey.T:
                                         truncateList = !truncateList;
@@ -263,7 +267,8 @@ namespace IndxConsoleApp
                                         continue;
                                     case ConsoleKey.P:
                                         printFacets = !printFacets;
-                                        break;
+                                        if (!printFacets) currentFacetPage = 0;
+                                        continue;
                                     case ConsoleKey.B:
                                         if (docsBoosted > 0)
                                             enableBoost = !enableBoost;
@@ -287,7 +292,10 @@ namespace IndxConsoleApp
                                     default:
                                         // For non-toggle keys, process as normal input.
                                         if (keyInfo.Key == ConsoleKey.Backspace && text.Length > 0)
+                                        {
                                             text = text.Substring(0, text.Length - 1);
+                                            currentFacetPage = 0;
+                                        }
                                         else if (keyInfo.Key == ConsoleKey.UpArrow)
                                             num++;
                                         else if (keyInfo.Key == ConsoleKey.DownArrow)
@@ -318,6 +326,7 @@ namespace IndxConsoleApp
                         {
                             table.Expand();
                             table.AddColumn("Name");
+                            table.AddColumn("Japanese name");
                             table.AddColumn("Pokedex #");
                             table.AddColumn("Types");
                             table.AddColumn("Classification");
@@ -342,6 +351,7 @@ namespace IndxConsoleApp
                                 {
                                     var pokenum = JsonHelper.GetFieldValue(json, "pokedex_number");
                                     var name = JsonHelper.GetFieldValue(json, "name");
+                                    var japname = JsonHelper.GetFieldValue(json, "japanese_name");
                                     var type1 = JsonHelper.GetFieldValue(json, "type1");
                                     var type2 = JsonHelper.GetFieldValue(json, "type2");
                                     var classification = JsonHelper.GetFieldValue(json, "classfication");
@@ -362,6 +372,10 @@ namespace IndxConsoleApp
 
                                     table.AddRow(
                                         new Panel(new Markup($"{name} {legendarySymbol}"))
+                                            .Border(BoxBorder.None)
+                                            .Padding(new Padding(1))
+                                            .PadLeft(0),
+                                        new Panel(new Markup(japname))
                                             .Border(BoxBorder.None)
                                             .Padding(new Padding(1))
                                             .PadLeft(0),
@@ -455,6 +469,7 @@ namespace IndxConsoleApp
                             // Additional info: hit count and, if enabled, performance measurements.
                             Markup additionalInfo = new Markup($"\nExact hits: {truncationIndex + 1}\n");
                             Markup performanceMeta = new Markup("");
+                            if(printFacets) query.EnableFacets = true;
                             if (measurePerformance)
                             {
                                 int numReps = 100;
@@ -485,13 +500,13 @@ namespace IndxConsoleApp
                             commands.AddColumn("Key");
                             commands.AddColumn("Command");
                             commands.AddColumn("Status");
-                            commands.AddRow("[[T]]", "[grey]Truncation[/]", (truncateList ? "[cyan]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[F]]", "[grey]Filters[/]", (enableFilters ? "[cyan]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[P]]", "[grey]Print facets[/]", (printFacets  ? "[cyan]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[B]]", "[grey]Boosting[/]", (enableBoost ? "[cyan]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[E]]", "[grey]Empty search[/]", (allowEmptySearch ? "[cyan]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[M]]", "[grey]Measure performance[/]", (measurePerformance ? "[cyan]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[S]]", "[grey]Sorting[/]", (sortList ? "[cyan]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[T]]", "[grey]Truncation[/]", (truncateList ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[F]]", "[grey]Filters[/]", (enableFilters ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[P]]", "[grey]Print facets[/]", (printFacets  ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[B]]", "[grey]Boosting[/]", (enableBoost ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[E]]", "[grey]Empty search[/]", (allowEmptySearch ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[M]]", "[grey]Measure performance[/]", (measurePerformance ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[[S]]", "[grey]Sorting[/]", (sortList ? "[cyan bold]Enabled[/]" : "Disabled"));
 
 
                             renderables.Add(facetsMarkup);
