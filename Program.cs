@@ -76,9 +76,6 @@ namespace IndxConsoleApp
                 SearchEngine.GetField("name")!.Indexable = true;
                 SearchEngine.GetField("name")!.Weight = Weight.High;
 
-                SearchEngine.GetField("japanese_name")!.Indexable = true;
-                SearchEngine.GetField("japanese_name")!.Weight = Weight.Med;
-
                 SearchEngine.GetField("type1")!.Indexable = true;
                 SearchEngine.GetField("type1")!.Weight = Weight.Low;
                 SearchEngine.GetField("type1")!.Facetable = true;
@@ -320,7 +317,6 @@ namespace IndxConsoleApp
                         {
                             table.Expand();
                             table.AddColumn("Name");
-                            table.AddColumn("Japanese name");
                             table.AddColumn("Pokedex #");
                             table.AddColumn("Types");
                             table.AddColumn("Classification");
@@ -345,7 +341,6 @@ namespace IndxConsoleApp
                                 {
                                     var pokenum = JsonHelper.GetFieldValue(json, "pokedex_number");
                                     var name = JsonHelper.GetFieldValue(json, "name");
-                                    var japname = JsonHelper.GetFieldValue(json, "japanese_name");
                                     var type1 = JsonHelper.GetFieldValue(json, "type1");
                                     var type2 = JsonHelper.GetFieldValue(json, "type2");
                                     var classification = JsonHelper.GetFieldValue(json, "classfication");
@@ -366,10 +361,6 @@ namespace IndxConsoleApp
 
                                     table.AddRow(
                                         new Panel(new Markup($"{name} {legendarySymbol}"))
-                                            .Border(BoxBorder.None)
-                                            .Padding(new Padding(1))
-                                            .PadLeft(0),
-                                        new Panel(new Markup(japname))
                                             .Border(BoxBorder.None)
                                             .Padding(new Padding(1))
                                             .PadLeft(0),
