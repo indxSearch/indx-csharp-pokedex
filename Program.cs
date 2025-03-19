@@ -429,6 +429,7 @@ namespace IndxConsoleApp
 
                                 // Pagination: Show groupsPerPage facet groups per page.
                                 int groupsPerPage = 2;
+                                if(truncationIndex < 10) groupsPerPage = 4;
                                 int totalPages = (int)Math.Ceiling((double)facetGroups.Count / groupsPerPage);
                                 if (totalPages == 0)
                                     totalPages = 1;
