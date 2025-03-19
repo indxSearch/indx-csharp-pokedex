@@ -258,35 +258,35 @@ namespace IndxConsoleApp
                                         // lastInputTime = DateTime.Now;
                                         currentFacetPage = 0;
                                         continue;
-                                    case ConsoleKey.T:
+                                    case ConsoleKey.T when keyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift):
                                         truncateList = !truncateList;
                                         continue;
-                                    case ConsoleKey.F:
+                                    case ConsoleKey.F when keyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift):
                                         if (combinedFilters != null)
                                             enableFilters = !enableFilters;
                                         continue;
-                                    case ConsoleKey.P:
+                                    case ConsoleKey.P when keyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift):
                                         printFacets = !printFacets;
                                         if (!printFacets) currentFacetPage = 0;
                                         continue;
-                                    case ConsoleKey.B:
+                                    case ConsoleKey.B when keyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift):
                                         if (docsBoosted > 0)
                                             enableBoost = !enableBoost;
                                         continue;
-                                    case ConsoleKey.E:
+                                    case ConsoleKey.E when keyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift):
                                         allowEmptySearch = !allowEmptySearch;
                                         continue;
-                                    case ConsoleKey.M:
+                                    case ConsoleKey.M when keyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift):
                                         measurePerformance = !measurePerformance;
                                         continue;
-                                    case ConsoleKey.S:
+                                    case ConsoleKey.S when keyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift):
                                         if (sortField != null)
                                             sortList = !sortList;
                                         continue;
-                                    case ConsoleKey.LeftArrow:
+                                    case ConsoleKey.LeftArrow when printFacets:
                                         currentFacetPage = Math.Max(0, currentFacetPage - 1);
                                         continue;
-                                    case ConsoleKey.RightArrow:
+                                    case ConsoleKey.RightArrow when printFacets:
                                         currentFacetPage++;
                                         continue;
                                     default:
@@ -457,7 +457,7 @@ namespace IndxConsoleApp
                                 int count = Math.Min(groupsPerPage, facetGroups.Count - start);
                                 var pageFacets = facetGroups.Skip(start).Take(count);
                                 string facetText = string.Join("\n\n", pageFacets) +
-                                                $"\n\n[grey]Page {currentFacetPage + 1} of {totalPages} (←/→ to navigate)[/]";
+                                                $"\n\n[grey]Page {currentFacetPage + 1} of {totalPages} [[LEFT/RIGHT]] to navigate)[/]";
 
                                 facetsMarkup = new Markup(facetText);
                             }
@@ -500,14 +500,13 @@ namespace IndxConsoleApp
                             commands.AddColumn("Key");
                             commands.AddColumn("Command");
                             commands.AddColumn("Status");
-                            commands.AddRow("[[T]]", "[grey]Truncation[/]", (truncateList ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[F]]", "[grey]Filters[/]", (enableFilters ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[P]]", "[grey]Print facets[/]", (printFacets  ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[B]]", "[grey]Boosting[/]", (enableBoost ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[E]]", "[grey]Empty search[/]", (allowEmptySearch ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[M]]", "[grey]Measure performance[/]", (measurePerformance ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("[[S]]", "[grey]Sorting[/]", (sortList ? "[cyan bold]Enabled[/]" : "Disabled"));
-
+                            commands.AddRow("SHIFT-T", "[grey]Truncation[/]", (truncateList ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("SHIFT-F", "[grey]Filters[/]", (enableFilters ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("SHIFT-P", "[grey]Print facets[/]", (printFacets  ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("SHIFT-B", "[grey]Boosting[/]", (enableBoost ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("SHIFT-E", "[grey]Empty search[/]", (allowEmptySearch ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("SHIFT-M", "[grey]Measure performance[/]", (measurePerformance ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("SHIFT-S", "[grey]Sorting[/]", (sortList ? "[cyan bold]Enabled[/]" : "Disabled"));
 
                             renderables.Add(facetsMarkup);
                             renderables.Add(additionalInfo);
