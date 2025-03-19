@@ -33,7 +33,7 @@ namespace IndxConsoleApp
                     .PageSize(10)
                     .MoreChoicesText("[grey](Move up and down to reveal more choices)[/]")
                     .AddChoices(
-                        "pokedex", "boligmappa", "millum"
+                        "pokedex"
                     ));
 
             // Locate file (adjust relative path if needed)

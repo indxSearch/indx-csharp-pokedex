@@ -15,7 +15,7 @@ Indx.dll
 x64/
 [Bb]in/
 [Oo]bj/
-data/
+data/millum.json
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
