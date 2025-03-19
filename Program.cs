@@ -33,7 +33,7 @@ namespace IndxConsoleApp
                     .PageSize(10)
                     .MoreChoicesText("[grey](Move up and down to reveal more choices)[/]")
                     .AddChoices(
-                        "pokedex"
+                        "pokedex" // add more datasets with comma separator
                     ));
 
             // Locate file (adjust relative path if needed)
@@ -99,13 +99,8 @@ namespace IndxConsoleApp
                 SearchEngine.GetField("abilities")!.Facetable = true;
 
                 sortField = SearchEngine.GetField("attack")!;
-            }
+            } // Add more datasets 
 
-            else if (fileName == "millum")
-            {
-                SearchEngine.GetField("Navn")!.Indexable = true;
-                SearchEngine.GetField("KatalogID")!.Facetable = true;
-            }
 
             // 
             // LOAD DATA FROM JSON
@@ -218,7 +213,6 @@ namespace IndxConsoleApp
             double latency = 0.0;
             long memoryUsed = 0;
             bool continuousMeasure = true;
-            if(fileName == "millum") continuousMeasure = false;
             int currentFacetPage = 0;
             DateTime lastInputTime = DateTime.Now;
 
