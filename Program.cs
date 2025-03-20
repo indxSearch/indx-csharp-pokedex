@@ -198,6 +198,7 @@ namespace IndxConsoleApp
             string text = string.Empty;
             int num = 5;
             var query = new JsonQuery(text, num);
+
             bool enableFilters = false;
             bool enableBoost = false;
             bool allowEmptySearch = false;
@@ -211,6 +212,7 @@ namespace IndxConsoleApp
             long memoryUsed = 0;
             bool continuousMeasure = true;
             int currentFacetPage = 0;
+
             DateTime lastInputTime = DateTime.Now;
 
             AnsiConsole.Live(new Rows([]))
@@ -246,7 +248,6 @@ namespace IndxConsoleApp
                                 {
                                     case ConsoleKey.C:
                                         text = "";
-                                        // lastInputTime = DateTime.Now;
                                         currentFacetPage = 0;
                                         continue;
                                     case ConsoleKey.T when keyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift):
@@ -324,9 +325,14 @@ namespace IndxConsoleApp
                             table.AddColumn("Score");
                         }
 
+                        //
+                        // SEARCH
+                        //
+
                         var jsonResult = SearchEngine.Search(query);
                         int minimumScore = 0;
                         truncationIndex = jsonResult.TruncationIndex;
+
                         if (jsonResult != null)
                         {
                             for (int i = 0; i < jsonResult.Records.Length; i++)
@@ -351,7 +357,8 @@ namespace IndxConsoleApp
                                     var legendarySymbol = legendary == "True" ? "🌟" : "";
 
                                     var stats = new Table();
-                                    stats.BorderStyle = new Style(Color.Grey30);
+                                    stats.Border(TableBorder.Rounded);
+                                    stats.BorderColor(Color.Grey30);
                                     stats.HideHeaders();
                                     // stats.Expand();
                                     stats.AddColumn("Attack");
@@ -386,7 +393,7 @@ namespace IndxConsoleApp
                                             .PadLeft(0)
                                     );
 
-                                }
+                                } // end pokedex
                             }
                         }
 
@@ -401,7 +408,7 @@ namespace IndxConsoleApp
                         };
 
                         // If idle for 2+ seconds and there is text (or empty search is allowed),
-                        // add facets, performance info, and prompt instructions.
+                        // add facets, performance info, and command instructions.
                         if ((DateTime.Now - lastInputTime).TotalSeconds >= 2 && (text.Length > 0 || allowEmptySearch))
                         {
                             query.EnableFacets = true;
@@ -475,7 +482,6 @@ namespace IndxConsoleApp
                                 performanceMeasured = true;
                             } else performanceMeasured = false;
 
-                            // Prompt text: note the square brackets for keys are escaped.
                             var promptText = new Markup(
                                 "[cyan]Press [[UP/DOWN]] to change num, [[ESC]] to quit, [[C]] to clear, or type to continue searching.[/]\n"
                             );
@@ -485,13 +491,13 @@ namespace IndxConsoleApp
                             commands.AddColumn("Key");
                             commands.AddColumn("Command");
                             commands.AddColumn("Status");
-                            commands.AddRow("SHIFT-T", "[grey]Truncation[/]", (truncateList ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("SHIFT-F", "[grey]Filters[/]", (enableFilters ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("SHIFT-P", "[grey]Print facets[/]", (printFacets  ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("SHIFT-B", "[grey]Boosting[/]", (enableBoost ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("SHIFT-E", "[grey]Empty search[/]", (allowEmptySearch ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("SHIFT-M", "[grey]Measure performance[/]", (measurePerformance ? "[cyan bold]Enabled[/]" : "Disabled"));
-                            commands.AddRow("SHIFT-S", "[grey]Sorting[/]", (sortList ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[grey]SHIFT-[/]T", "[grey]Truncation[/]", (truncateList ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[grey]SHIFT-[/]F", "[grey]Filters[/]", (enableFilters ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[grey]SHIFT-[/]P", "[grey]Print facets[/]", (printFacets  ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[grey]SHIFT-[/]B", "[grey]Boosting[/]", (enableBoost ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[grey]SHIFT-[/]E", "[grey]Empty search[/]", (allowEmptySearch ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[grey]SHIFT-[/]M", "[grey]Measure performance[/]", (measurePerformance ? "[cyan bold]Enabled[/]" : "Disabled"));
+                            commands.AddRow("[grey]SHIFT-[/]S", "[grey]Sorting[/]", (sortList ? "[cyan bold]Enabled[/]" : "Disabled"));
 
                             renderables.Add(facetsMarkup);
                             renderables.Add(additionalInfo);
@@ -500,13 +506,11 @@ namespace IndxConsoleApp
                             renderables.Add(commands);
                         }
 
-                        // Combine renderables in a vertical stack.
+                        // Combine renderables in a vertical stack
                         var renderStack = new Rows(renderables);
                         ctx.UpdateTarget(renderStack);
-
-                        Thread.Sleep(50);
-                    }
-                });
+                    } // end context
+                }); // end Live view
         } // end Main
 
         /// Prints detected JSON fields
@@ -528,7 +532,7 @@ namespace IndxConsoleApp
             var table = new Table();
             table.BorderColor(Color.Grey50);
             table.Expand();
-            table.Border = TableBorder.Markdown;
+            table.Border = TableBorder.Horizontal;
             table.Title = new TableTitle("\n[LightSlateBlue]Detected JSON Fields[/]\n");
             
             // Add columns.
