@@ -481,7 +481,7 @@ namespace IndxConsoleApp
                             );
                             var commands = new Table();
                             commands.Border(TableBorder.Rounded);
-                            commands.BorderColor(Color.Cyan1);
+                            commands.BorderColor(Color.LightSlateBlue);
                             commands.AddColumn("Key");
                             commands.AddColumn("Command");
                             commands.AddColumn("Status");
