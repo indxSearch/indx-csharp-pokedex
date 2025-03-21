@@ -21,21 +21,11 @@ namespace IndxConsoleApp
 
             // Display header
             AnsiConsole.Write(
-                new FigletText("indx v4.0")
-                    .Centered()
-                    .Color(Color.White));
+                new FigletText("indx " + new Version(SearchEngine.Status.Version).ToString(2))
+                    .Centered());
 
-            // Prompt for dataset selection
-            var fileName = AnsiConsole.Prompt(
-                new SelectionPrompt<string>()
-                    .Title("Choose a dataset?")
-                    .HighlightStyle(new Style(Color.Black, Color.White))
-                    .PageSize(10)
-                    .MoreChoicesText("[grey](Move up and down to reveal more choices)[/]")
-                    .AddChoices(
-                        "pokedex" // add more datasets with comma separator
-                    ));
-
+            // Dataset
+            var fileName = "pokedex";
             // Locate file (adjust relative path if needed)
             string file = "data/" + fileName + ".json";
             if (!File.Exists(file))
@@ -67,36 +57,33 @@ namespace IndxConsoleApp
 
             Field sortField = null!;
 
-            if (fileName == "pokedex")
-            {
-                SearchEngine.GetField("pokedex_number")!.Indexable = true;
-                SearchEngine.GetField("pokedex_number")!.Weight = Weight.High;
-                SearchEngine.GetField("pokedex_number")!.Filterable = true;
+            SearchEngine.GetField("pokedex_number")!.Indexable = true;
+            SearchEngine.GetField("pokedex_number")!.Weight = Weight.High;
+            SearchEngine.GetField("pokedex_number")!.Filterable = true;
 
-                SearchEngine.GetField("name")!.Indexable = true;
-                SearchEngine.GetField("name")!.Weight = Weight.High;
+            SearchEngine.GetField("name")!.Indexable = true;
+            SearchEngine.GetField("name")!.Weight = Weight.High;
 
-                SearchEngine.GetField("type1")!.Indexable = true;
-                SearchEngine.GetField("type1")!.Weight = Weight.Low;
-                SearchEngine.GetField("type1")!.Facetable = true;
+            SearchEngine.GetField("type1")!.Indexable = true;
+            SearchEngine.GetField("type1")!.Weight = Weight.Low;
+            SearchEngine.GetField("type1")!.Facetable = true;
 
-                SearchEngine.GetField("type2")!.Indexable = true;
-                SearchEngine.GetField("type2")!.Weight = Weight.Low;
-                SearchEngine.GetField("type2")!.Facetable = true;
+            SearchEngine.GetField("type2")!.Indexable = true;
+            SearchEngine.GetField("type2")!.Weight = Weight.Low;
+            SearchEngine.GetField("type2")!.Facetable = true;
 
-                SearchEngine.GetField("classfication")!.Indexable = true;
-                SearchEngine.GetField("classfication")!.Weight = Weight.Low;
-                SearchEngine.GetField("classfication")!.Facetable = true;
+            SearchEngine.GetField("classfication")!.Indexable = true;
+            SearchEngine.GetField("classfication")!.Weight = Weight.Low;
+            SearchEngine.GetField("classfication")!.Facetable = true;
 
-                SearchEngine.GetField("is_legendary")!.Facetable = true;
-                SearchEngine.GetField("is_legendary")!.Filterable = true;
+            SearchEngine.GetField("is_legendary")!.Facetable = true;
+            SearchEngine.GetField("is_legendary")!.Filterable = true;
 
-                SearchEngine.GetField("attack")!.Sortable = true;
+            SearchEngine.GetField("attack")!.Sortable = true;
 
-                SearchEngine.GetField("abilities")!.Facetable = true;
+            SearchEngine.GetField("abilities")!.Facetable = true;
 
-                sortField = SearchEngine.GetField("attack")!;
-            } // Add more datasets 
+            sortField = SearchEngine.GetField("attack")!;
 
 
             // 
@@ -115,7 +102,7 @@ namespace IndxConsoleApp
                         SearchEngine.LoadJson(fstream, out _);
                     });
                 double loadTime = (DateTime.Now - loadStart).TotalMilliseconds;
-                AnsiConsole.Markup($"\nLoading {file} completed in {((int)loadTime / 1000.0):F1} seconds\n");
+                AnsiConsole.Markup($"\nLoading {file} completed in {(int)loadTime / 1000.0:F1} seconds\n");
             }
 
             // 
@@ -160,7 +147,7 @@ namespace IndxConsoleApp
 
             indexTime = (DateTime.Now - indexStart).TotalMilliseconds;
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"🟢 Indexed '{file}' ({SearchEngine.Status.DocumentCount} documents) and ready to search in {(indexTime / 1000.0):F1} seconds\n");
+            Console.WriteLine($"🟢 Indexed '{file}' ({SearchEngine.Status.DocumentCount} documents) and ready to search in {indexTime / 1000.0:F1} seconds\n");
             Console.ResetColor();
 
             // 
@@ -170,18 +157,15 @@ namespace IndxConsoleApp
             Filter combinedFilters = null!;
             int docsBoosted = 0;
 
-            if (fileName == "pokedex")
-            {
-                // FILTER
-                Filter origFilter = SearchEngine.CreateRangeFilter("pokedex_number", 1, 151)!;
-                combinedFilters = origFilter; // could combine additional filters here with & operator
+            // FILTER
+            Filter origFilter = SearchEngine.CreateRangeFilter("pokedex_number", 1, 151)!;
+            combinedFilters = origFilter; // could combine additional filters here with & operator
 
-                // BOOST
-                Filter legendaryFilter = SearchEngine.CreateValueFilter("is_legendary", true)!;
-                var legendaryBoost = new Boost[1];
-                legendaryBoost[0] = new Boost(legendaryFilter, BoostStrength.Med);
-                docsBoosted = SearchEngine.DefineBoost(legendaryBoost);
-            }
+            // BOOST
+            Filter legendaryFilter = SearchEngine.CreateValueFilter("is_legendary", true)!;
+            var legendaryBoost = new Boost[1];
+            legendaryBoost[0] = new Boost(legendaryFilter, BoostStrength.Med);
+            docsBoosted = SearchEngine.DefineBoost(legendaryBoost);
 
             // 
             // WAIT FOR USER TO START SEARCHING
@@ -311,26 +295,23 @@ namespace IndxConsoleApp
                             query.EnableBoost = enableBoost;
 
                         // Build search results table
-                        var table = new Table().Border(TableBorder.Simple);
-                        table.BorderStyle = new Style(Color.Grey15);
+                        var table = new Table();
+                        table.Border(TableBorder.Simple);
+                        table.BorderColor(Color.Grey15);
+                        table.Expand();
 
-                        if(fileName == "pokedex")
-                        {
-                            table.Expand();
-                            table.AddColumn("Name");
-                            table.AddColumn("Pokedex #");
-                            table.AddColumn("Types");
-                            table.AddColumn("Classification");
-                            table.AddColumn("Stats [Grey30](Attack, Health, Speed)[/]");
-                            table.AddColumn("Score");
-                        }
+                        table.AddColumn("Name");
+                        table.AddColumn("Pokedex #");
+                        table.AddColumn("Types");
+                        table.AddColumn("Classification");
+                        table.AddColumn("Stats [Grey30](Attack, Health, Speed)[/]");
+                        table.AddColumn("Score");
 
                         //
                         // SEARCH
                         //
 
                         var jsonResult = SearchEngine.Search(query);
-                        int minimumScore = 0;
                         truncationIndex = jsonResult.TruncationIndex;
 
                         if (jsonResult != null)
@@ -340,65 +321,60 @@ namespace IndxConsoleApp
                                 var key = jsonResult.Records[i].DocumentKey;
                                 var score = jsonResult.Records[i].Score;
                                 string json = SearchEngine.GetJsonDataOfKey(key);
-                                if (score < minimumScore)
-                                    break;
 
-                                if(fileName == "pokedex")
-                                {
-                                    var pokenum = JsonHelper.GetFieldValue(json, "pokedex_number");
-                                    var name = JsonHelper.GetFieldValue(json, "name");
-                                    var type1 = JsonHelper.GetFieldValue(json, "type1");
-                                    var type2 = JsonHelper.GetFieldValue(json, "type2");
-                                    var classification = JsonHelper.GetFieldValue(json, "classfication");
-                                    var speed = JsonHelper.GetFieldValue(json, "speed");
-                                    var attack = JsonHelper.GetFieldValue(json, "attack");
-                                    var health = JsonHelper.GetFieldValue(json, "hp");
-                                    var legendary = JsonHelper.GetFieldValue(json, "is_legendary");
-                                    var legendarySymbol = legendary == "True" ? "🌟" : "";
+                                var pokenum = JsonHelper.GetFieldValue(json, "pokedex_number");
+                                var name = JsonHelper.GetFieldValue(json, "name");
+                                var type1 = JsonHelper.GetFieldValue(json, "type1");
+                                var type2 = JsonHelper.GetFieldValue(json, "type2");
+                                var classification = JsonHelper.GetFieldValue(json, "classfication");
+                                var speed = JsonHelper.GetFieldValue(json, "speed");
+                                var attack = JsonHelper.GetFieldValue(json, "attack");
+                                var health = JsonHelper.GetFieldValue(json, "hp");
+                                var legendary = JsonHelper.GetFieldValue(json, "is_legendary");
+                                var legendarySymbol = legendary == "True" ? "🌟" : "";
 
-                                    var stats = new Table();
-                                    stats.Border(TableBorder.Rounded);
-                                    stats.BorderColor(Color.Grey30);
-                                    stats.HideHeaders();
-                                    // stats.Expand();
-                                    stats.AddColumn("Attack");
-                                    stats.AddColumn("Health");
-                                    stats.AddColumn("Speed");
-                                    stats.AddRow(attack, health, speed);
+                                var stats = new Table();
+                                stats.Border(TableBorder.Rounded);
+                                stats.BorderColor(Color.Grey30);
+                                stats.HideHeaders();
+                                stats.AddColumn("Attack");
+                                stats.AddColumn("Health");
+                                stats.AddColumn("Speed");
+                                stats.AddRow(attack, health, speed);
 
-                                    table.AddRow(
-                                        new Panel(new Markup($"{name} {legendarySymbol}"))
-                                            .Border(BoxBorder.None)
-                                            .Padding(new Padding(1))
-                                            .PadLeft(0),
-                                        new Panel(new Markup(pokenum))
-                                            .Border(BoxBorder.None)
-                                            .Padding(new Padding(1))
-                                            .PadLeft(0),
-                                        new Panel(new Markup($"{type1} {type2}"))
-                                            .Border(BoxBorder.None)
-                                            .Padding(new Padding(1))
-                                            .PadLeft(0),
-                                         new Panel(new Markup(classification))
-                                            .Border(BoxBorder.None)
-                                            .Padding(new Padding(1))
-                                            .PadLeft(0),
-                                        new Panel(stats)
-                                            .Padding(new Padding(0))
-                                            .Expand()
-                                            .Border(BoxBorder.None),
-                                        new Panel(new Markup($"{score}"))
-                                            .Border(BoxBorder.None)
-                                            .Padding(new Padding(1))
-                                            .PadLeft(0)
-                                    );
-
-                                } // end pokedex
+                                table.AddRow(
+                                    new Panel(new Markup($"{name} {legendarySymbol}"))
+                                        .Border(BoxBorder.None)
+                                        .Padding(new Padding(1))
+                                        .PadLeft(0),
+                                    new Panel(new Markup(pokenum))
+                                        .Border(BoxBorder.None)
+                                        .Padding(new Padding(1))
+                                        .PadLeft(0),
+                                    new Panel(new Markup($"{type1} {type2}"))
+                                        .Border(BoxBorder.None)
+                                        .Padding(new Padding(1))
+                                        .PadLeft(0),
+                                        new Panel(new Markup(classification))
+                                        .Border(BoxBorder.None)
+                                        .Padding(new Padding(1))
+                                        .PadLeft(0),
+                                    new Panel(stats)
+                                        .Padding(new Padding(0))
+                                        .Expand()
+                                        .Border(BoxBorder.None),
+                                    new Panel(new Markup($"{score}"))
+                                        .Border(BoxBorder.None)
+                                        .Padding(new Padding(1))
+                                        .PadLeft(0)
+                                );
                             }
                         }
 
                         // Prepare header markup; escape dynamic text to avoid markup parsing errors.
-                        var inputField = new Markup("🔍 Search: " + Markup.Escape(text) + "\n");
+                        string cursor = "█";
+                        if ((DateTime.Now - lastInputTime).TotalSeconds >= 2) cursor = "";
+                        var inputField = new Markup("🔍 Search: " + Markup.Escape(text) + cursor + "\n");
 
                         // Render list
                         var renderables = new List<IRenderable>
