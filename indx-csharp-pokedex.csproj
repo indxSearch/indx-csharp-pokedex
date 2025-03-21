@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="IndxSearchLib" Version="4.0.0-beta05" />
+    <PackageReference Include="IndxSearchLib" Version="4.0.0-rc01" />
     <PackageReference Include="Spectre.Console" Version="0.49.1" />
   </ItemGroup>
   <ItemGroup Condition="Exists('indx.license')">
